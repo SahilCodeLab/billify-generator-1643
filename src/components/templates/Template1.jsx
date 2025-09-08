@@ -3,7 +3,7 @@ import BaseTemplate from './BaseTemplate';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const Template1 = ({ data }) => {
-  const { billTo, shipTo, invoice, yourCompany, items, taxPercentage, taxAmount, subTotal, grandTotal, notes, selectedCurrency } = data;
+  const { billTo, shipTo, invoice, yourCompany, items, taxPercentage, discountPercentage = 0, taxAmount, discountAmount = 0, subTotal, grandTotal, notes, selectedCurrency } = data;
 
   return (
     <BaseTemplate data={data}>
@@ -78,6 +78,12 @@ const Template1 = ({ data }) => {
               <span>Subtotal:</span>
               <span>{formatCurrency(subTotal, selectedCurrency)}</span>
             </div>
+            {discountPercentage > 0 && (
+              <div className="flex justify-between mb-2">
+                <span>Discount ({discountPercentage}%):</span>
+                <span>-{formatCurrency(discountAmount, selectedCurrency)}</span>
+              </div>
+            )}
             {taxPercentage > 0 && (
               <div className="flex justify-between mb-2">
                 <span>Tax ({taxPercentage}%):</span>

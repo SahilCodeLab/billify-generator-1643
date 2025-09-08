@@ -4,15 +4,19 @@ export const calculateSubTotal = (items) => {
     .toFixed(2);
 };
 
+export const calculateDiscountAmount = (subTotal, discountPercentage) => {
+  return (parseFloat(subTotal) * (discountPercentage / 100)).toFixed(2);
+};
+
 export const calculateTaxAmount = (subTotal, taxPercentage) => {
   return (parseFloat(subTotal) * (taxPercentage / 100)).toFixed(2);
 };
 
-export const calculateGrandTotal = (subTotal, taxPercentage) => {
-  return (
-    parseFloat(subTotal).toFixed(2) +
-    calculateTaxAmount(subTotal, taxPercentage)
-  );
+export const calculateGrandTotal = (subTotal, discountPercentage = 0, taxPercentage = 0) => {
+  const discountAmount = calculateDiscountAmount(subTotal, discountPercentage);
+  const discountedSubTotal = parseFloat(subTotal) - parseFloat(discountAmount);
+  const taxAmount = parseFloat(discountedSubTotal) * (taxPercentage / 100);
+  return (discountedSubTotal + taxAmount).toFixed(2);
 };
 
 export const generateGSTNumber = () => {

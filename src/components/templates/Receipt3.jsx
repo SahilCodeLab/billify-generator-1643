@@ -1,15 +1,17 @@
 import React from 'react';
 import { format } from 'date-fns';
 import BaseTemplate2 from './BaseTemplate2';
-import { calculateSubTotal, calculateTaxAmount, calculateGrandTotal } from '../../utils/invoiceCalculations';
+import { calculateSubTotal, calculateTaxAmount, calculateDiscountAmount } from '../../utils/invoiceCalculations';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const Receipt3 = ({ data, isPrint = false }) => {
-  const { billTo = {}, invoice = {}, yourCompany = {}, cashier = '', items = [], taxPercentage = 0, notes = '', footer = '', selectedCurrency } = data || {};
+  const { billTo = {}, invoice = {}, yourCompany = {}, cashier = '', items = [], taxPercentage = 0, discountPercentage = 0, notes = '', footer = '', selectedCurrency } = data || {};
 
   const subTotal = calculateSubTotal(items);
-  const taxAmount = calculateTaxAmount(subTotal, taxPercentage);
-  const total = calculateGrandTotal(subTotal, taxAmount);
+  const discountAmount = calculateDiscountAmount(subTotal, discountPercentage);
+  const discountedSubTotal = parseFloat(subTotal) - parseFloat(discountAmount);
+  const taxAmount = calculateTaxAmount(discountedSubTotal, taxPercentage);
+  const total = parseFloat(discountedSubTotal) + parseFloat(taxAmount);
 
   return (
     <BaseTemplate2
@@ -72,6 +74,12 @@ const Receipt3 = ({ data, isPrint = false }) => {
             <span>SubTotal:</span>
             <span>{formatCurrency(subTotal, selectedCurrency)}</span>
           </div>
+          {discountPercentage > 0 && (
+            <div className="flex justify-between">
+              <span>Discount ({discountPercentage}%):</span>
+              <span>-{formatCurrency(discountAmount, selectedCurrency)}</span>
+            </div>
+          )}
           {taxPercentage > 0 && (
             <div className="flex justify-between">
               <span>Tax ({taxPercentage}%):</span>

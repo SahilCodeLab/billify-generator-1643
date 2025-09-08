@@ -69,7 +69,9 @@ const Index = () => {
   });
   const [items, setItems] = useState([]);
   const [taxPercentage, settaxPercentage] = useState(0);
+  const [discountPercentage, setDiscountPercentage] = useState(0);
   const [taxAmount, setTaxAmount] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
   const [subTotal, setSubTotal] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
   const [notes, setNotes] = useState("");
@@ -94,6 +96,7 @@ const Index = () => {
       );
       setItems(parsedData.items || []);
       settaxPercentage(parsedData.taxPercentage || 0);
+      setDiscountPercentage(parsedData.discountPercentage || 0);
       setNotes(parsedData.notes || "");
       setSelectedCurrency(parsedData.selectedCurrency || "INR"); // Load selectedCurrency from localStorage
     } else {
@@ -114,7 +117,9 @@ const Index = () => {
       yourCompany,
       items,
       taxPercentage,
+      discountPercentage,
       taxAmount,
+      discountAmount,
       subTotal,
       grandTotal,
       notes,
@@ -128,11 +133,14 @@ const Index = () => {
     yourCompany,
     items,
     taxPercentage,
+    discountPercentage,
     notes,
     taxAmount,
+    discountAmount,
     subTotal,
     grandTotal,
     selectedCurrency, // Add selectedCurrency to localStorage dependency array
+  ]);
   ]);
 
   const handleInputChange = (setter) => (e) => {
@@ -168,37 +176,46 @@ const Index = () => {
     return calculatedSubTotal;
   };
 
-  const calculateTaxAmount = (subTotalValue) => { // Renamed param to avoid conflict with state
-    const tax = (subTotalValue * taxPercentage) / 100;
-    setTaxAmount(tax); // Store as number
+  const calculateDiscountAmount = (subTotalValue) => {
+    const discount = (subTotalValue * discountPercentage) / 100;
+    setDiscountAmount(discount);
+    return discount;
+  };
+
+  const calculateTaxAmount = (discountedSubTotal) => {
+    const tax = (discountedSubTotal * taxPercentage) / 100;
+    setTaxAmount(tax);
     return tax;
   };
 
-  const calculateGrandTotal = (subTotalValue, taxAmountValue) => { // Renamed params to avoid conflict with state
-    const total = parseFloat(subTotalValue) + parseFloat(taxAmountValue);
-    setGrandTotal(total); // Store as number
+  const calculateGrandTotal = (subTotalValue, discountAmountValue, taxAmountValue) => {
+    const discountedSubTotal = parseFloat(subTotalValue) - parseFloat(discountAmountValue);
+    const total = discountedSubTotal + parseFloat(taxAmountValue);
+    setGrandTotal(total);
     return total;
   };
 
   const updateTotals = () => {
     const currentSubTotal = calculateSubTotal();
-    const currentTaxAmount = calculateTaxAmount(currentSubTotal);
-    // setGrandTotal will be called by calculateGrandTotal via currentTaxAmount's setter,
-    // or directly if we prefer explicit calls.
-    // For clarity and directness, let's call it explicitly here.
-    calculateGrandTotal(currentSubTotal, currentTaxAmount);
-    // Note: setSubTotal and setTaxAmount are called within their respective calculate functions.
+    const currentDiscountAmount = calculateDiscountAmount(currentSubTotal);
+    const discountedSubTotal = currentSubTotal - currentDiscountAmount;
+    const currentTaxAmount = calculateTaxAmount(discountedSubTotal);
+    calculateGrandTotal(currentSubTotal, currentDiscountAmount, currentTaxAmount);
   };
 
   const handleTaxPercentageChange = (e) => {
     const taxRate = parseFloat(e.target.value) || 0;
     settaxPercentage(taxRate);
-    // updateTotals will be called by the useEffect listening to taxPercentage change
+  };
+
+  const handleDiscountPercentageChange = (e) => {
+    const discountRate = parseFloat(e.target.value) || 0;
+    setDiscountPercentage(discountRate);
   };
 
   useEffect(() => {
     updateTotals();
-  }, [items, taxPercentage]); // subTotal, taxAmount, grandTotal removed from deps as they are set by updateTotals & its chain
+  }, [items, taxPercentage, discountPercentage]);
 
   const handleTemplateClick = (templateNumber) => {
     const formData = {
@@ -208,7 +225,9 @@ const Index = () => {
       yourCompany,
       items,
       taxPercentage,
+      discountPercentage,
       taxAmount,
+      discountAmount,
       subTotal,
       grandTotal,
       notes,
@@ -287,6 +306,7 @@ const Index = () => {
       },
     ]);
     settaxPercentage(10);
+    setDiscountPercentage(5);
     calculateSubTotal();
     setNotes("Thank you for your business!");
   };
@@ -302,6 +322,7 @@ const Index = () => {
     setYourCompany({ name: "", address: "", phone: "" });
     setItems([{ name: "", description: "", quantity: 0, amount: 0, total: 0 }]);
     settaxPercentage(0);
+    setDiscountPercentage(0);
     setNotes("");
     localStorage.removeItem("formData");
   };
@@ -336,6 +357,7 @@ const Index = () => {
                 yourCompany,
                 items,
                 taxPercentage,
+                discountPercentage,
                 notes,
                 selectedCurrency, // Ensure this is passed
               },
@@ -436,6 +458,24 @@ const Index = () => {
                 <span>{formatCurrency(subTotal, selectedCurrency)}</span>
               </div>
               <div className="flex justify-between mb-2">
+                <span>Discount Rate (%):</span>
+                <input
+                  type="number"
+                  value={discountPercentage}
+                  onChange={(e) => handleDiscountPercentageChange(e)}
+                  className="w-24 p-2 border rounded"
+                  min="0"
+                  max="100"
+                  step="1"
+                />
+              </div>
+              {discountPercentage > 0 && (
+                <div className="flex justify-between mb-2">
+                  <span>Discount Amount:</span>
+                  <span>-{formatCurrency(discountAmount, selectedCurrency)}</span>
+                </div>
+              )}
+              <div className="flex justify-between mb-2">
                 <span>Tax Rate (%):</span>
                 <input
                   type="number"
@@ -447,10 +487,12 @@ const Index = () => {
                   step="1"
                 />
               </div>
-              <div className="flex justify-between mb-2">
-                <span>Tax Amount:</span>
-                <span>{formatCurrency(taxAmount, selectedCurrency)}</span>
-              </div>
+              {taxPercentage > 0 && (
+                <div className="flex justify-between mb-2">
+                  <span>Tax Amount:</span>
+                  <span>{formatCurrency(taxAmount, selectedCurrency)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold">
                 <span>Grand Total:</span>
                 <span>{formatCurrency(grandTotal, selectedCurrency)}</span>
