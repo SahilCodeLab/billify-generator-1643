@@ -141,7 +141,6 @@ const Index = () => {
     grandTotal,
     selectedCurrency, // Add selectedCurrency to localStorage dependency array
   ]);
-  ]);
 
   const handleInputChange = (setter) => (e) => {
     const { name, value } = e.target;
